@@ -1,6 +1,10 @@
 import { defineConfig } from 'vite'
+import { sveltekit } from '@sveltejs/kit/vite'
+import tailwindcss from '@tailwindcss/vite'
 
 export default defineConfig({ 
+  plugins: [sveltekit(), tailwindcss()],
+  
   // 预览服务器配置（用于生产环境） 
   preview: { 
     host: '0.0.0.0',  // 监听所有网络接口 
