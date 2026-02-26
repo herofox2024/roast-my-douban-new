@@ -235,13 +235,13 @@
     <div class="absolute top-0 left-0 w-20 h-20 -mt-2 -ml-2 z-10">
       <svg viewBox="0 0 120 120" class="w-full h-full">
         <!-- 金色花瓣 -->
-        <path d="M60 10 Q75 20 90 40 Q100 60 90 80 Q75 100 60 110 Q45 100 30 80 Q20 60 30 40 Q45 20 60 10 Z" class="fill-[#B8860B]" />
-        <path d="M60 15 Q70 25 80 40 Q90 60 80 80 Q70 95 60 105 Q50 95 40 80 Q30 60 40 40 Q50 25 60 15 Z" class="fill-[#B8860B]" opacity="0.8" />
-        <path d="M60 20 Q65 30 70 40 Q80 60 70 80 Q65 90 60 100 Q55 90 50 80 Q40 60 50 40 Q55 30 60 20 Z" class="fill-[#B8860B]" opacity="0.6" />
+        <path d="M60 10 Q75 20 90 40 Q100 60 90 80 Q75 100 60 110 Q45 100 30 80 Q20 60 30 40 Q45 20 60 10 Z" fill="#B8860B" />
+        <path d="M60 15 Q70 25 80 40 Q90 60 80 80 Q70 95 60 105 Q50 95 40 80 Q30 60 40 40 Q50 25 60 15 Z" fill="#B8860B" opacity="0.8" />
+        <path d="M60 20 Q65 30 70 40 Q80 60 70 80 Q65 90 60 100 Q55 90 50 80 Q40 60 50 40 Q55 30 60 20 Z" fill="#B8860B" opacity="0.6" />
         <!-- 深红色圆形背景 -->
-        <circle cx="60" cy="60" r="25" class="fill-[#C00000]" />
+        <circle cx="60" cy="60" r="25" fill="#C00000" />
         <!-- 金色奖字 -->
-        <text x="60" y="68" text-anchor="middle" dominant-baseline="middle" class="fill-[#B8860B] font-bold text-2xl">奖</text>
+        <text x="60" y="68" text-anchor="middle" dominant-baseline="middle" fill="#B8860B" class="font-bold text-2xl">奖</text>
       </svg>
     </div>
     
