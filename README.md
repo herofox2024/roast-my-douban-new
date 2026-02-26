@@ -43,6 +43,20 @@ You can support me by Alipay (scan QR code below) or [ko-fi](https://ko-fi.com/a
 
 ## Changelog
 
+### 2026-02-26 Updates
+
+1. **UI Improvements**:
+   - Updated praise mode result card design with golden and crimson color scheme
+   - Changed top-left decoration from red flower to golden flower with red "奖" (Award) character
+   - Updated "诊断对象 ID" (Diagnosis Object ID) to "荣光记录 ID" (Glory Record ID) for praise mode
+   - Changed "确诊率" (Diagnosis Rate) to "契合度" (Compatibility Rate) for praise mode
+   - Added upward arrow next to compatibility rate percentage in praise mode
+   - Updated praise mode card styles: background, border, shadow, and text colors
+
+2. **Technical Fixes**:
+   - Fixed compilation errors related to Svelte template syntax
+   - Improved responsive design for better mobile display
+
 ### 2026-02-25 Updates
 
 1. **UI Improvements**:

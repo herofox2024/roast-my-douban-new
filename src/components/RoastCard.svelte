@@ -163,11 +163,11 @@
 
   onMount(async () => {
     try {
-      qrCodeUrl = await QRCode.toDataURL('https://rmd.aeriszhu.com/', {
+      qrCodeUrl = await QRCode.toDataURL('https://roast-my-douban-new.onrender.com/', {
         margin: 0,
         width: 100,
         color: {
-          dark: '#007722',
+          dark: isPraiseResult() ? '#d4af37' : '#007722',
           light: '#00000000',
         },
       });
@@ -185,7 +185,7 @@
       const dataUrl = await toPng(cardElement, {
         cacheBust: true,
         pixelRatio: 2, // High resolution
-        backgroundColor: '#ffffff',
+        backgroundColor: isPraiseResult() ? '#fffbf0' : '#ffffff',
       });
 
       // Try Web Share API first (for iOS/Android native share sheet)
@@ -228,17 +228,45 @@
 <div class="w-full mx-auto">
   <div
     bind:this={cardElement}
-    class="bg-white border-2 border-[#007722] shadow-[8px_8px_0px_0px_rgba(0,119,34,0.2)] p-5 pb-3 md:pb-4 md:px-8 md:pt-6 w-full mx-auto text-slate-800 font-sans relative group"
+    class="{isPraiseResult() ? 'bg-[#fffdf0] border-2 border-[#B8860B] shadow-[10px_10px_0px_0px_rgba(192,0,0,0.1)]' : 'bg-white border-2 border-[#007722] shadow-[8px_8px_0px_0px_rgba(0,119,34,0.2)]'} p-5 pb-3 md:pb-4 md:px-8 md:pt-6 w-full mx-auto text-slate-800 font-sans relative group"
   >
+    <!-- 顶部金色花朵装饰 (仅夸夸模式) -->
+    {#if isPraiseResult()}
+    <div class="absolute top-0 left-0 w-20 h-20 -mt-2 -ml-2 z-10">
+      <svg viewBox="0 0 120 120" class="w-full h-full">
+        <!-- 金色花瓣 -->
+        <path d="M60 10 Q75 20 90 40 Q100 60 90 80 Q75 100 60 110 Q45 100 30 80 Q20 60 30 40 Q45 20 60 10 Z" class="fill-[#B8860B]" />
+        <path d="M60 15 Q70 25 80 40 Q90 60 80 80 Q70 95 60 105 Q50 95 40 80 Q30 60 40 40 Q50 25 60 15 Z" class="fill-[#B8860B]" opacity="0.8" />
+        <path d="M60 20 Q65 30 70 40 Q80 60 70 80 Q65 90 60 100 Q55 90 50 80 Q40 60 50 40 Q55 30 60 20 Z" class="fill-[#B8860B]" opacity="0.6" />
+        <!-- 深红色圆形背景 -->
+        <circle cx="60" cy="60" r="25" class="fill-[#C00000]" />
+        <!-- 金色奖字 -->
+        <text x="60" y="68" text-anchor="middle" dominant-baseline="middle" class="fill-[#B8860B] font-bold text-2xl">奖</text>
+      </svg>
+    </div>
+    
+    <!-- 右上角金榜版标志 (仅夸夸模式) -->
+    <div class="absolute top-0 right-0 bg-[#C00000] text-white px-3 py-1 text-xs font-bold rounded-bl-lg z-10">
+      金榜版
+    </div>
+    {/if}
+    
     <div class="relative z-20">
-      <header class="border-b-2 border-[#007722]/20 pb-4 mb-8 flex justify-between items-end">
+      <header class="{isPraiseResult() ? 'border-b-2 border-[#B8860B]/20' : 'border-b-2 border-[#007722]/20'} pb-4 mb-8 flex justify-between items-end">
         <div>
-          <h2 class="text-xs text-[#007722]/70 uppercase tracking-widest mb-1">诊断对象 ID</h2>
-          <h1 class="text-[26px] sm:text-3xl font-bold font-sans text-[#007722] uppercase tracking-tighter">{result.archetype}</h1>
+          <h2 class="text-xs {isPraiseResult() ? 'text-[#B8860B]/70' : 'text-[#007722]/70'} uppercase tracking-widest mb-1">{isPraiseResult() ? '荣光记录 ID' : '诊断对象 ID'}</h2>
+          <h1 class="text-[26px] sm:text-3xl font-bold font-serif {isPraiseResult() ? 'text-[#C00000]' : 'text-[#007722]'} uppercase tracking-tighter">{result.archetype}</h1>
         </div>
         <div class="text-right">
-          <span class="text-xs text-[#007722]/50 block">确诊率</span>
-          <span class="text-xl font-bold text-[#007722]">{diagnosisRate}%</span>
+          <span class="text-xs {isPraiseResult() ? 'text-[#B8860B]/50' : 'text-[#007722]/50'} block">{isPraiseResult() ? '契合度' : '确诊率'}</span>
+          <div class="flex items-center justify-end">
+            <span class="text-xl font-bold {isPraiseResult() ? 'text-[#B8860B]' : 'text-[#007722]'}">{diagnosisRate}%</span>
+            {#if isPraiseResult()}
+              <svg viewBox="0 0 24 24" class="w-4 h-4 ml-1 {isPraiseResult() ? 'text-[#B8860B]' : 'text-[#007722]'}">
+                <path d="M12 5l-7 7h5v7h4v-7h5l-7-7z" fill="currentColor" />
+              </svg>
+            {/if}
+          </div>
         </div>
       </header>
 
@@ -257,7 +285,7 @@
               <polygon
                 points={getKeys().map((_, i) => getPoint(i, level)).join(' ')}
                 fill="none"
-                stroke="#007722"
+                stroke={isPraiseResult() ? '#d4af37' : '#007722'}
                 stroke-width="1"
                 class="opacity-10"
               />
@@ -270,9 +298,9 @@
                 y1={center}
                 x2={getPoint(i, 100).split(',')[0]}
                 y2={getPoint(i, 100).split(',')[1]}
-                stroke="#007722"
+                stroke={isPraiseResult() ? '#d4af37' : '#007722'}
                 stroke-width="1"
-                class="opacity-20"
+                class="opacity-40"
               />
               <!-- Labels -->
               <!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -281,8 +309,9 @@
                 y={parseFloat(getPoint(i, 115).split(',')[1])}
                 text-anchor="middle"
                 dominant-baseline="middle"
-                fill="#007722"
-                class="text-[10px] fill-[#007722] font-bold cursor-help hover:opacity-75 transition-opacity"
+                fill={isPraiseResult() ? '#d4af37' : '#007722'}
+                class="text-[10px] font-bold cursor-help hover:opacity-75 transition-opacity"
+                style="fill: {isPraiseResult() ? '#d4af37' : '#007722'}"
                 onmouseenter={() => (hoveredAxisIndex = i)}
                 onmouseleave={() => (hoveredAxisIndex = null)}
               >
@@ -293,8 +322,8 @@
             <!-- Data Polygon -->
             <polygon
               {points}
-              fill="rgba(0, 119, 34, 0.1)"
-              stroke="#007722"
+              fill={isPraiseResult() ? 'rgba(212, 175, 55, 0.1)' : 'rgba(0, 119, 34, 0.1)'}
+              stroke={isPraiseResult() ? '#d4af37' : '#007722'}
               stroke-width="2"
             />
 
@@ -304,7 +333,7 @@
                 cx={getPoint(i, result.scores[key] || 0).split(',')[0]}
                 cy={getPoint(i, result.scores[key] || 0).split(',')[1]}
                 r="3"
-                fill="#007722"
+                fill={isPraiseResult() ? '#d4af37' : '#007722'}
               />
             {/each}
           </svg>
@@ -334,7 +363,7 @@
         <div class="flex flex-wrap justify-center md:justify-center gap-3 max-w-[320px]">
           {#each result.tags as tag}
             <span
-              class="px-3 py-1.5 flex items-center justify-center bg-[#007722]/5 border border-[#007722]/30 text-xs text-[#007722] rounded-full uppercase tracking-wider font-bold whitespace-nowrap"
+              class="px-3 py-1.5 flex items-center justify-center {isPraiseResult() ? 'bg-[#d4af37]/5 border border-[#d4af37]/30 text-xs text-[#c62828]' : 'bg-[#007722]/5 border border-[#007722]/30 text-xs text-[#007722]'} rounded-full uppercase tracking-wider font-bold whitespace-nowrap"
             >
               {tag}
             </span>
@@ -344,18 +373,18 @@
 
       <!-- Content Text -->
       <div class="relative px-2 -mx-3 md:mx-0">
-        <div class="absolute -left-1 -top-4 text-4xl text-[#007722] opacity-20 font-serif rotate-15">"</div>
+        <div class="absolute -left-1 -top-4 text-4xl {isPraiseResult() ? 'text-[#d4af37]' : 'text-[#007722]'} opacity-20 font-serif rotate-15">"</div>
         <p class="leading-relaxed text-slate-600 italic text-center font-serif text-sm md:text-base">
           {isPraiseResult() ? result.praise : result.roast}
         </p>
-        <div class="absolute -right-1 -bottom-4 text-4xl text-[#007722] opacity-20 font-serif rotate-15">"</div>
+        <div class="absolute -right-1 -bottom-4 text-4xl {isPraiseResult() ? 'text-[#d4af37]' : 'text-[#007722]'} opacity-20 font-serif rotate-15">"</div>
       </div>
 
       <!-- Analysis Log (Collapsible) -->
       {#if result.item_analysis && result.item_analysis.length > 0}
-        <div class="mt-6 -mx-1 pt-4 border-t border-[#007722]/10">
+        <div class="mt-6 -mx-1 pt-4 border-t {isPraiseResult() ? 'border-[#d4af37]/10' : 'border-[#007722]/10'}">
             <button
-              class="w-full flex items-center justify-between text-[#007722]/60 hover:text-[#007722] transition-colors text-xs font-bold uppercase tracking-widest group h-12 relative"
+              class="w-full flex items-center justify-between {isPraiseResult() ? 'text-[#d4af37]/60 hover:text-[#c62828]' : 'text-[#007722]/60 hover:text-[#007722]'} transition-colors text-xs font-bold uppercase tracking-widest group h-12 relative"
               onclick={() => (showLogs = !showLogs)}
             >
             <span>
@@ -367,7 +396,7 @@
               {#if qrCodeUrl && !showLogs}
                 <img 
                   src={qrCodeUrl} 
-                  alt="Scan to rmd.aeriszhu.com" 
+                  alt="Scan to roast-my-douban-new.onrender.com" 
                   class="w-10 h-10 object-contain transition-opacity duration-300 opacity-80 group-hover:opacity-0 absolute right-0"
                 />
               {/if}
@@ -378,16 +407,16 @@
             {#if showLogs}
               <div class="space-y-3 mt-4 animate-in slide-in-from-top-2 duration-300">
                 {#each result.item_analysis as item}
-                  <div class="text-xs text-slate-600 leading-relaxed font-mono bg-[#f9f9f9] p-2 rounded border border-gray-100">
+                  <div class="text-xs text-slate-600 leading-relaxed font-mono bg-[#f9f9f9] p-2 rounded border {isPraiseResult() ? 'border-[#d4af37]/20' : 'border-[#007722]/20'}">
                     <div class="flex items-baseline justify-between gap-2 mb-2">
-                      <div class="font-bold text-[#007722]/80 shrink-0">《{item[0]}》</div>
+                      <div class="font-bold {isPraiseResult() ? 'text-[#c62828]/80' : 'text-[#007722]/80'} shrink-0">《{item[0]}》</div>
                       {#if item[2]}
-                        <div class="text-[10px] text-[#007722]/80 line-clamp-2 leading-tight text-right italic font-serif opacity-80">
+                        <div class="text-[10px] {isPraiseResult() ? 'text-[#d4af37]/80' : 'text-[#007722]/80'} line-clamp-2 leading-tight text-right italic font-serif opacity-80">
                           {item[2]}
                         </div>
                       {/if}
                     </div>
-                    <div class="pl-1 sm:pl-2 sm:border-l-2 sm:border-[#007722]/20 text-slate-500">
+                    <div class="pl-1 sm:pl-2 sm:border-l-2 {isPraiseResult() ? 'sm:border-[#d4af37]/20' : 'sm:border-[#007722]/20'} text-slate-500">
                       [AI 洞察] {item[1]}
                     </div>
                   </div>
@@ -396,13 +425,33 @@
             {/if}
         </div>
       {/if}
+      
+      <!-- 底部印章和文字 (仅夸夸模式) -->
+      {#if isPraiseResult()}
+      <div class="mt-8 pt-4 border-t border-[#d4af37]/20 flex flex-col items-center">
+        <div class="text-center mb-4">
+          <p class="text-xs text-[#d4af37] uppercase tracking-wider font-bold">DOUBAN CULTURAL COMMITTEE</p>
+          <p class="text-xs text-[#d4af37]/70">豆瓣精神文明建设委员会颁发</p>
+        </div>
+        
+        <!-- 印章 -->
+        <div class="w-16 h-16 bg-[#c62828]/10 rounded-full flex items-center justify-center border border-[#c62828]/30 mb-4">
+          <svg viewBox="0 0 100 100" class="w-full h-full">
+            <circle cx="50" cy="50" r="45" fill="none" stroke="#c62828" stroke-width="2" />
+            <text x="50" y="50" text-anchor="middle" dominant-baseline="middle" fill="#c62828" class="text-xs font-bold">
+              豆瓣认证
+            </text>
+          </svg>
+        </div>
+      </div>
+      {/if}
     </div>
   </div>
 
   <footer class="flex items-center justify-center gap-4 py-4 mt-4">
     <button
       onclick={() => window.location.reload()}
-      class="px-6 py-2 bg-[#007722]/10 hover:bg-[#007722]/20 text-[#007722] font-bold uppercase tracking-wider text-sm transition-colors rounded-sm"
+      class="px-6 py-2 {isPraiseResult() ? 'bg-[#d4af37]/10 hover:bg-[#d4af37]/20 text-[#c62828]' : 'bg-[#007722]/10 hover:bg-[#007722]/20 text-[#007722]'} font-bold uppercase tracking-wider text-sm transition-colors rounded-sm"
     >
       <svg
         class="inline"
@@ -423,9 +472,9 @@
     <button
       onclick={handleShare}
       disabled={isExporting}
-      class="px-6 py-2 bg-[#007722] hover:bg-[#006611] text-white font-bold uppercase tracking-wider text-sm transition-colors shadow-lg active:translate-y-1 active:shadow-none rounded-sm flex items-center gap-2 disabled:opacity-50 disabled:cursor-wait"
+      class="px-6 py-2 {isPraiseResult() ? 'bg-[#c62828] hover:bg-[#b71c1c]' : 'bg-[#007722] hover:bg-[#006611]'} text-white font-bold uppercase tracking-wider text-sm transition-colors shadow-lg active:translate-y-1 active:shadow-none rounded-sm flex items-center gap-2 disabled:opacity-50 disabled:cursor-wait"
     >
-      {isExporting ? '生成中...' : '分享诊断单'}
+      {isExporting ? '生成中...' : (isPraiseResult() ? '保存奖状' : '分享诊断单')}
     </button>
   </footer>
 </div>

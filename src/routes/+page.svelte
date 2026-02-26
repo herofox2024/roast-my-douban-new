@@ -476,11 +476,14 @@
   </div>
 
   <div class="absolute bottom-4 left-0 w-full text-center select-none">
-    <p class="text-[11px] text-[#007722]/50 font-mono mx-6">
+    <p class="text-[11px] font-mono mx-6" style="color: {roaster.status === 'success' && roaster.mode === 'praise' ? '#d4af37' : '#007722'}">
       Designed by <a
         target="_blank"
         rel="noopener noreferrer"
-        href="https://github.com/anig1scur">Yanxin</a
+        href="https://github.com/anig1scur"
+        class="transition-colors duration-200"
+        style="color: {roaster.status === 'success' && roaster.mode === 'praise' ? '#d4af37' : '#007722'}"
+      >Yanxin</a
       > and made with Gemini. 内容由 AI 生成，仅供娱乐，请勿自行代入或过度解读
     </p>
   </div>
