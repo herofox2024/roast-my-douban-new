@@ -1,14 +1,25 @@
 import { error, json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 
+const API_BATCH_SIZE = 50;
+const DEFAULT_MAX_ITEMS = 100;
+const MAX_ALLOWED_ITEMS = 10000;
+const DEFAULT_EXPORT_QUERY_LIMIT = 200;
 
 export const POST: RequestHandler = async ({ request }: { request: Request }) => {
-	const { userId, type } = await request.json();
+	const { userId, type, maxItems: maxItemsRaw, queryLimit: queryLimitRaw, shuffle } = await request.json();
 
 	if (!userId || !type) {
 		throw error(400, '缺少必要参数');
 	}
 
+  const requestedLimitRaw = queryLimitRaw ?? maxItemsRaw;
+  const parsedMaxItems = Number(requestedLimitRaw);
+  const maxItems = Number.isFinite(parsedMaxItems)
+    ? Math.min(MAX_ALLOWED_ITEMS, Math.max(1, Math.floor(parsedMaxItems)))
+    : DEFAULT_MAX_ITEMS;
+  const shouldShuffle = typeof shuffle === 'boolean' ? shuffle : true;
+  const queryLimit = shouldShuffle ? Math.max(maxItems, DEFAULT_EXPORT_QUERY_LIMIT) : maxItems;
 
 
     // Helper to fetch data from Rexxar API
@@ -37,20 +48,22 @@ export const POST: RequestHandler = async ({ request }: { request: Request }) =>
     };
 
 	try {
-    // Fetch 200 items (4 parallel requests of 50)
-    const [page1, page2, page3, page4] = await Promise.all([
-			fetchData(0, 50),
-      fetchData(50, 50),
-      fetchData(100, 50),
-      fetchData(150, 50)
-		]);
+    const rawInterests: any[] = [];
+    let totalFromApi: number | null = null;
+    for (let start = 0; start < queryLimit; start += API_BATCH_SIZE) {
+      if (totalFromApi !== null && start >= totalFromApi) break;
 
-    const rawInterests = [
-      ...(page1.interests || []),
-      ...(page2.interests || []),
-      ...(page3.interests || []),
-      ...(page4.interests || [])
-    ];
+      const page = await fetchData(start, API_BATCH_SIZE);
+      const pageInterests = Array.isArray(page.interests) ? page.interests : [];
+      if (typeof page.total === 'number' && Number.isFinite(page.total)) {
+        totalFromApi = page.total;
+      }
+      if (pageInterests.length === 0) break;
+      rawInterests.push(...pageInterests);
+      if (pageInterests.length < API_BATCH_SIZE) break;
+      if (rawInterests.length >= queryLimit) break;
+      if (totalFromApi !== null && start + API_BATCH_SIZE >= totalFromApi) break;
+    }
 
         // Map to cleaner format
     let items = rawInterests.map((item: any) => ({
@@ -68,8 +81,14 @@ export const POST: RequestHandler = async ({ request }: { request: Request }) =>
           return hasRating || hasComment || hasTags;
         });
 
-    if (items.length > 100) {
-      items = items.sort(() => 0.5 - Math.random()).slice(0, 100);
+    if (items.length > queryLimit) {
+      items = items.slice(0, queryLimit);
+    }
+
+    if (shouldShuffle && items.length > maxItems) {
+      items = items.sort(() => 0.5 - Math.random()).slice(0, maxItems);
+    } else if (!shouldShuffle && items.length > maxItems) {
+      items = items.slice(0, maxItems);
     }
 
     const result = {

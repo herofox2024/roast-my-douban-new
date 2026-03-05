@@ -6,9 +6,20 @@
   import {onMount} from 'svelte';
 
   const roaster = new Roaster();
+  const DEFAULT_QUERY_LIMIT = 200;
+  const MAX_QUERY_LIMIT = 10000;
+  const TYPE_LABELS: Record<string, string> = {
+    book: '书籍',
+    movie: '电影',
+    music: '音乐',
+    game: '游戏'
+  };
 
   // Log state with IDs for stable rendering
   let logContainer = $state<HTMLDivElement>();
+  let queryLimit = $state(DEFAULT_QUERY_LIMIT);
+  let isExporting = $state(false);
+  let exportMsg = $state('');
 
   $effect(() => {
     if (logContainer && roaster.systemLogs.length) {
@@ -47,6 +58,150 @@
   async function handleSubmit(e: Event) {
     e.preventDefault();
     await roaster.start(apiKeys);
+  }
+
+  const clampQueryLimit = (value: number) => {
+    if (!Number.isFinite(value)) return DEFAULT_QUERY_LIMIT;
+    return Math.min(MAX_QUERY_LIMIT, Math.max(1, Math.floor(value)));
+  };
+
+  const escapeHtml = (value: unknown) =>
+    String(value ?? '')
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#39;');
+
+  const toText = (value: unknown) => escapeHtml(value).replaceAll('\n', '<br/>');
+
+  const formatTags = (tags: unknown) => {
+    if (!Array.isArray(tags)) return '';
+    return tags.map((tag) => String(tag)).join('、');
+  };
+
+  const toSafeFileName = (name: string) => {
+    const cleaned = name.replace(/[\\/:*?"<>|]/g, '_').trim();
+    return cleaned.length > 0 ? cleaned : 'douban';
+  };
+
+  const buildExportHtml = (items: any[], type: string, userId: string) => {
+    const typeLabel = TYPE_LABELS[type] ?? type;
+    const createdAt = new Date().toLocaleString('zh-CN', {hour12: false});
+    const rows = items
+      .map(
+        (item, idx) => `<tr>
+  <td>${idx + 1}</td>
+  <td>${escapeHtml(typeLabel)}</td>
+  <td>${toText(item.title)}</td>
+  <td>${toText(item.rating ?? '')}</td>
+  <td>${toText(item.create_time?.slice?.(0, 10) ?? item.create_time ?? '')}</td>
+  <td>${toText(formatTags(item.tags))}</td>
+  <td>${toText(item.comment ?? '')}</td>
+</tr>`
+      )
+      .join('\n');
+
+    return `<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>${escapeHtml(userId)} ${escapeHtml(typeLabel)} 导出</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 24px; color: #222; }
+    h1 { margin: 0 0 8px; font-size: 24px; }
+    .meta { margin: 0 0 16px; color: #555; font-size: 13px; }
+    table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+    th, td { border: 1px solid #ddd; padding: 8px; vertical-align: top; font-size: 13px; word-break: break-word; }
+    th { background: #f4f6f8; position: sticky; top: 0; }
+  </style>
+</head>
+<body>
+  <h1>豆瓣 ${escapeHtml(typeLabel)} 导出</h1>
+  <p class="meta">用户ID：${escapeHtml(userId)} ｜ 导出时间：${escapeHtml(createdAt)} ｜ 条数：${items.length}</p>
+  <table>
+    <thead>
+      <tr>
+        <th style="width:60px;">序号</th>
+        <th style="width:90px;">类型</th>
+        <th style="width:220px;">标题</th>
+        <th style="width:80px;">评分</th>
+        <th style="width:110px;">日期</th>
+        <th style="width:220px;">标签</th>
+        <th>评论</th>
+      </tr>
+    </thead>
+    <tbody>
+${rows}
+    </tbody>
+  </table>
+</body>
+</html>`;
+  };
+
+  async function handleExportHtml() {
+    const userId = roaster.userId.trim();
+    if (!userId) {
+      roaster.errorMsg = '请输入豆瓣ID后再导出';
+      return;
+    }
+
+    exportMsg = '';
+    isExporting = true;
+    const limit = clampQueryLimit(Number(queryLimit));
+    queryLimit = limit;
+
+    try {
+      const res = await fetch('/api/fetch-douban', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          userId,
+          type: roaster.type,
+          queryLimit: limit,
+          shuffle: false
+        })
+      });
+
+      if (!res.ok) {
+        let message = '导出失败';
+        try {
+          const errData = await res.json();
+          message = errData?.message || message;
+        } catch (error) {
+          console.error('Failed to parse export error:', error);
+        }
+        throw new Error(message);
+      }
+
+      const data = await res.json();
+      const items = Array.isArray(data?.interests) ? data.interests : [];
+      if (items.length === 0) {
+        throw new Error('没有可导出的记录，请确认账号公开且该类型有标记数据');
+      }
+
+      const html = buildExportHtml(items, roaster.type, userId);
+      const date = new Date().toISOString().slice(0, 10);
+      const fileName = `douban-${toSafeFileName(userId)}-${roaster.type}-${date}.html`;
+      const blob = new Blob([html], {type: 'text/html;charset=utf-8'});
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+
+      exportMsg = `已导出 ${items.length} 条 ${TYPE_LABELS[roaster.type] ?? roaster.type} 数据`;
+    } catch (err: any) {
+      const message = err?.message || '导出失败';
+      exportMsg = message;
+      roaster.errorMsg = message;
+    } finally {
+      isExporting = false;
+    }
   }
 </script>
 
@@ -360,6 +515,40 @@
                 ></line><polyline points="12 5 19 12 12 19"></polyline></svg
               >
             </button>
+
+            <div class="mt-4 pt-4 border-t border-dashed border-gray-200 space-y-3">
+              <div class="flex items-center gap-2 text-xs">
+                <label
+                  for="query-limit"
+                  class="text-[#007722]/70 font-bold whitespace-nowrap"
+                >
+                  查询上限
+                </label>
+                <input
+                  id="query-limit"
+                  type="number"
+                  min="1"
+                  max={MAX_QUERY_LIMIT}
+                  bind:value={queryLimit}
+                  onblur={() => (queryLimit = clampQueryLimit(Number(queryLimit)))}
+                  class="w-28 bg-[#f9f9f9] border border-gray-100 rounded px-2 py-1.5 text-[#494949] font-mono focus:outline-none focus:border-[#42bd56] focus:ring-2 focus:ring-[#42bd56]/20"
+                />
+                <span class="text-gray-400">默认 200，按当前类别导出</span>
+              </div>
+
+              <button
+                type="button"
+                disabled={!roaster.userId || isExporting}
+                onclick={handleExportHtml}
+                class="w-full py-3 bg-[#f3faf4] hover:bg-[#eaf7ec] text-[#007722] border border-[#42bd56]/30 font-bold tracking-wide text-sm transition-all rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isExporting ? '导出中...' : `导出${TYPE_LABELS[roaster.type] ?? roaster.type}网页表格（HTML）`}
+              </button>
+
+              {#if exportMsg}
+                <p class="text-xs text-[#007722]/70">{exportMsg}</p>
+              {/if}
+            </div>
           </form>
         </div>
       </div>
