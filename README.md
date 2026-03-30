@@ -43,6 +43,30 @@ You can support me by Alipay (scan QR code below) or [ko-fi](https://ko-fi.com/a
 
 ## Changelog
 
+### 2026-03-30 Updates
+
+1. **Build & Runtime Stability**:
+   - Fixed `vite.config.ts` preview `port` type mismatch by normalizing `process.env.PORT` to a valid number.
+   - Cleaned up preview config formatting to avoid malformed inline comments causing config parsing confusion.
+
+2. **Rate Limit Hardening**:
+   - Updated client IP detection to prioritize trusted proxy headers (`cf-connecting-ip`, `x-vercel-forwarded-for`, `x-real-ip`).
+   - Added optional `TRUST_X_FORWARDED_FOR=true` switch for environments where `x-forwarded-for` is explicitly trusted.
+   - Unified rate-limit identity to pure IP for true rolling `24 h` behavior (removed date suffix).
+   - Updated rate-limit response message to match rolling 24-hour semantics.
+
+3. **Sampling Quality**:
+   - Replaced biased random subset logic (`sort(() => 0.5 - Math.random())`) with Fisher-Yates shuffle before slicing.
+
+4. **UI Background Fix**:
+   - Fixed scanning/analyzing dynamic background to actually render item cover images via `background-image`.
+   - Added URL escaping helper for safer CSS `url(...)` rendering.
+
+5. **LLM Reliability & Diagnostics**:
+   - Improved Gemini error reporting with extracted root cause details (instead of generic `fetch failed` only).
+   - Enhanced provider fallback strategy: try all candidates in pool, then fallback to server-side providers if user-key providers all fail.
+   - Added clearer final error when all configured providers fail.
+
 ### 2026-03-05 Updates
 
 1. **New Features**:
@@ -106,5 +130,4 @@ You can support me by Alipay (scan QR code below) or [ko-fi](https://ko-fi.com/a
 4. **User Experience**:
    - The praise mode now uses more lavish compliments and poetic exaggeration
    - Better responsive design for all screen sizes
-
 

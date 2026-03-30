@@ -6,6 +6,14 @@ const DEFAULT_MAX_ITEMS = 100;
 const MAX_ALLOWED_ITEMS = 10000;
 const DEFAULT_EXPORT_QUERY_LIMIT = 200;
 
+function shuffleInPlace<T>(arr: T[]): T[] {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
 export const POST: RequestHandler = async ({ request }: { request: Request }) => {
 	const { userId, type, maxItems: maxItemsRaw, queryLimit: queryLimitRaw, shuffle } = await request.json();
 
@@ -92,7 +100,7 @@ export const POST: RequestHandler = async ({ request }: { request: Request }) =>
     }
 
     if (shouldShuffle && items.length > maxItems) {
-      items = items.sort(() => 0.5 - Math.random()).slice(0, maxItems);
+      items = shuffleInPlace(items).slice(0, maxItems);
     } else if (!shouldShuffle && items.length > maxItems) {
       items = items.slice(0, maxItems);
     }

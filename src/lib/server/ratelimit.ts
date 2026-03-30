@@ -1,4 +1,4 @@
-import { env } from '$env/dynamic/private';
+﻿import { env } from '$env/dynamic/private';
 import { Ratelimit } from '@upstash/ratelimit';
 import { Redis } from '@upstash/redis';
 import type { RequestEvent } from '@sveltejs/kit';
@@ -7,6 +7,8 @@ export const LIMIT_CONFIG = {
   MAX_REQUESTS_PER_DAY: 3,
 };
 
+const TRUST_X_FORWARDED_FOR = env.TRUST_X_FORWARDED_FOR === 'true';
+
 const redis = new Redis({
   url: env.UPSTASH_REDIS_REST_URL,
   token: env.UPSTASH_REDIS_REST_TOKEN,
@@ -14,13 +16,20 @@ const redis = new Redis({
 
 export function getClientIp(request: Request): string {
   const headers = request.headers;
-  const xForwardedFor = headers.get('x-forwarded-for');
-  if (xForwardedFor) {
-    return xForwardedFor.split(',')[0].trim();
+  const trustedForwardedIp = headers.get('cf-connecting-ip')
+    || headers.get('x-vercel-forwarded-for')
+    || headers.get('x-real-ip');
+
+  if (trustedForwardedIp) return trustedForwardedIp;
+
+  if (TRUST_X_FORWARDED_FOR) {
+    const xForwardedFor = headers.get('x-forwarded-for');
+    if (xForwardedFor) {
+      return xForwardedFor.split(',')[0].trim();
+    }
   }
 
-  return headers.get('x-real-ip') || headers.get('cf-connecting-ip') ||
-    headers.get('x-vercel-forwarded-for') || 'unknown';
+  return 'unknown';
 }
 
 export async function checkRateLimit(
@@ -36,8 +45,7 @@ export async function checkRateLimit(
       prefix: prefix,
     });
 
-    const today = new Date().toISOString().split('T')[0];
-    const identifier = `${ clientIp }:${ today }`;
+    const identifier = clientIp;
 
     try {
       const { success, limit, remaining } = await ratelimit.limit(identifier);
@@ -45,7 +53,7 @@ export async function checkRateLimit(
         return new Response(
           JSON.stringify({
             error: 'Rate limit exceeded',
-            message: '请求太频繁啦，请休息一下明天再试，或者可以填入你自己的 API Key'
+            message: '请求过于频繁，请 24 小时后再试，或填写你自己的 API Key'
           }),
           {
             status: 429,
@@ -93,3 +101,4 @@ export function withRateLimit(
     return handler(event);
   };
 }
+

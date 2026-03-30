@@ -85,6 +85,9 @@
     return cleaned.length > 0 ? cleaned : 'douban';
   };
 
+  const toSafeCssUrl = (url: string) =>
+    encodeURI(url).replaceAll("'", '%27').replaceAll('"', '%22').replaceAll(')', '%29');
+
   const buildExportHtml = (items: any[], type: string, userId: string) => {
     const typeLabel = TYPE_LABELS[type] ?? type;
     const createdAt = new Date().toLocaleString('zh-CN', {hour12: false});
@@ -227,7 +230,8 @@ ${rows}
   {#if (roaster.status === 'scanning' || roaster.status === 'analyzing') && roaster.currentItem?.cover_url}
     <div
       class="absolute inset-0 bg-cover bg-center transition-all duration-700 ease-in-out blur-xl opacity-30 scale-105"
-      style="background-color: #eee;"
+      style:background-color={'#eee'}
+      style:background-image={`url("${toSafeCssUrl(roaster.currentItem.cover_url)}")`}
     ></div>
     <div class="absolute inset-0 bg-[#fdfdfc]/80 backdrop-blur-sm"></div>
   {/if}

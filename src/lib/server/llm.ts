@@ -16,6 +16,18 @@ export interface ApiKeys {
   chatgpt?: string;
 }
 
+function extractErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    const cause = (error as Error & { cause?: unknown }).cause;
+    if (cause instanceof Error) return `${error.message} | cause: ${cause.message}`;
+    if (cause && typeof cause === 'object' && 'message' in cause) {
+      return `${error.message} | cause: ${String((cause as { message?: unknown }).message)}`;
+    }
+    return error.message;
+  }
+  return String(error);
+}
+
 // --- Providers ---
 
 async function callGemini(prompt: string, apiKey?: string): Promise<LLMResponse> {
@@ -24,9 +36,16 @@ async function callGemini(prompt: string, apiKey?: string): Promise<LLMResponse>
   const genAI = new GoogleGenerativeAI(key);
   const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
-  const result = await model.generateContent(prompt);
-  const response = result.response;
-  return { text: response.text(), model: 'Gemini 2.5 Flash' };
+  try {
+    const result = await model.generateContent(prompt);
+    const response = result.response;
+    return { text: response.text(), model: 'Gemini 2.5 Flash' };
+  } catch (error) {
+    const detail = extractErrorMessage(error);
+    throw new Error(
+      `Gemini request failed: ${detail}. If you are in a restricted network, try DeepSeek/Qwen or configure proxy.`,
+    );
+  }
 }
 
 async function callDeepSeek(prompt: string, apiKey?: string): Promise<LLMResponse> {
@@ -160,27 +179,42 @@ export async function generateRoast(prompt: string, apiKeys?: ApiKeys): Promise<
     throw new Error('未配置大模型提供商。请选择大模型并输入对应的 API Key，或在服务器上设置 API Key。');
   }
 
-  // Strategy: If user provides specific keys, ONLY use those providers.
-  // This allows user to force a specific model/provider by only providing that key.
+  // Prefer user-provided providers first.
   const userProviders = providers.filter(p => p.key);
   const pool = userProviders.length > 0 ? userProviders : providers;
+  const serverOnlyProviders = providers.filter(p => !p.key);
 
-  const selected = pool[Math.floor(Math.random() * pool.length)];
+  const orderedPool = [...pool].sort(() => Math.random() - 0.5);
+  const selected = orderedPool[0];
   console.log(`[LLM] Selected Provider: ${ selected.name } ${ selected.key ? '(User Key)' : '(Server Key)' }`);
 
   try {
     return await selected.fn(prompt, selected.key);
   } catch (error) {
-    console.error(`[LLM] Provider ${ selected.name } failed:`, error);
+    console.error(`[LLM] Provider ${ selected.name } failed:`, extractErrorMessage(error));
 
-    // Fallback logic
-    const backupPool = pool.filter(p => p.name !== selected.name);
-
-    if (backupPool.length > 0) {
-      const backup = backupPool[Math.floor(Math.random() * backupPool.length)];
-      console.log(`[LLM] Falling back to: ${ backup.name }`);
-      return await backup.fn(prompt, backup.key);
+    // 1) Fallback inside same preferred pool
+    for (const backup of orderedPool.slice(1)) {
+      try {
+        console.log(`[LLM] Falling back to: ${ backup.name }`);
+        return await backup.fn(prompt, backup.key);
+      } catch (backupError) {
+        console.error(`[LLM] Provider ${ backup.name } failed:`, extractErrorMessage(backupError));
+      }
     }
-    throw error;
+
+    // 2) If user-provided provider(s) all fail, try server providers as last resort
+    if (userProviders.length > 0 && serverOnlyProviders.length > 0) {
+      for (const backup of serverOnlyProviders) {
+        try {
+          console.log(`[LLM] Falling back to server provider: ${ backup.name }`);
+          return await backup.fn(prompt, backup.key);
+        } catch (backupError) {
+          console.error(`[LLM] Server provider ${ backup.name } failed:`, extractErrorMessage(backupError));
+        }
+      }
+    }
+
+    throw new Error(`All configured LLM providers failed. Last error: ${ extractErrorMessage(error) }`);
   }
 }
