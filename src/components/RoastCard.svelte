@@ -161,6 +161,15 @@
   let showLogs = $state(false);
   let qrCodeUrl = $state('');
 
+  async function waitForRenderReady() {
+    if (typeof document !== 'undefined' && 'fonts' in document) {
+      await document.fonts.ready;
+    }
+    await new Promise<void>((resolve) => {
+      requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+    });
+  }
+
   onMount(async () => {
     try {
       qrCodeUrl = await QRCode.toDataURL('https://roast-my-douban-new.onrender.com/', {
@@ -182,6 +191,7 @@
     const fileName = `roast-my-douban-${Date.now()}.png`;
 
     try {
+      await waitForRenderReady();
       const dataUrl = await toPng(cardElement, {
         cacheBust: true,
         pixelRatio: 2, // High resolution
@@ -228,11 +238,11 @@
 <div class="w-full mx-auto">
   <div
     bind:this={cardElement}
-    class="{isPraiseResult() ? 'bg-[#fffdf0] border-2 border-[#B8860B] shadow-[10px_10px_0px_0px_rgba(192,0,0,0.1)]' : 'bg-white border-2 border-[#007722] shadow-[8px_8px_0px_0px_rgba(0,119,34,0.2)]'} p-5 pb-3 md:pb-4 md:px-8 md:pt-6 w-full mx-auto text-slate-800 font-sans relative group"
+    class="{isPraiseResult() ? 'bg-[#fffdf0] border-2 border-[#B8860B] shadow-[10px_10px_0px_0px_rgba(192,0,0,0.1)]' : 'bg-white border-2 border-[#007722] shadow-[8px_8px_0px_0px_rgba(0,119,34,0.2)]'} certificate-sans p-5 pb-3 md:pb-4 md:px-8 md:pt-6 w-full mx-auto text-slate-800 relative group"
   >
     <!-- 顶部金色花朵装饰 (仅夸夸模式) -->
     {#if isPraiseResult()}
-    <div class="absolute top-0 left-0 w-20 h-20 -mt-2 -ml-2 z-10">
+    <div class="absolute top-0 left-0 w-20 h-20 mt-2 -ml-2 z-10">
       <svg viewBox="0 0 120 120" class="w-full h-full">
         <!-- 金色花瓣 -->
         <path d="M60 10 Q75 20 90 40 Q100 60 90 80 Q75 100 60 110 Q45 100 30 80 Q20 60 30 40 Q45 20 60 10 Z" fill="#B8860B" />
@@ -241,7 +251,16 @@
         <!-- 深红色圆形背景 -->
         <circle cx="60" cy="60" r="25" fill="#C00000" />
         <!-- 金色奖字 -->
-        <text x="60" y="68" text-anchor="middle" dominant-baseline="middle" fill="#B8860B" class="font-bold text-2xl">奖</text>
+        <text
+          x="60"
+          y="68"
+          text-anchor="middle"
+          dominant-baseline="middle"
+          fill="#B8860B"
+          font-size="32"
+          font-weight="700"
+          font-family="'Songti SC','STSong','SimSun','Noto Serif CJK SC','Source Han Serif SC',serif"
+        >奖</text>
       </svg>
     </div>
     
@@ -252,18 +271,19 @@
     {/if}
     
     <div class="relative z-20">
-      <header class="{isPraiseResult() ? 'border-b-2 border-[#B8860B]/20' : 'border-b-2 border-[#007722]/20'} pb-4 mb-8 flex justify-between items-end">
+      <header class="{isPraiseResult() ? 'border-b-2 border-[#B8860B]/20 pl-14 sm:pl-16' : 'border-b-2 border-[#007722]/20'} pb-4 mb-8 flex justify-between items-end">
         <div>
           <h2 class="text-xs {isPraiseResult() ? 'text-[#B8860B]/70' : 'text-[#007722]/70'} uppercase tracking-widest mb-1">{isPraiseResult() ? '荣光记录 ID' : '诊断对象 ID'}</h2>
-          <h1 class="text-[26px] sm:text-3xl font-bold font-serif {isPraiseResult() ? 'text-[#C00000]' : 'text-[#007722]'} uppercase tracking-tighter">{result.archetype}</h1>
+          <h1 class="text-[26px] sm:text-3xl font-bold certificate-serif {isPraiseResult() ? 'text-[#C00000]' : 'text-[#007722]'} uppercase tracking-tighter">{result.archetype}</h1>
         </div>
         <div class="text-right">
           <span class="text-xs {isPraiseResult() ? 'text-[#B8860B]/50' : 'text-[#007722]/50'} block">{isPraiseResult() ? '契合度' : '确诊率'}</span>
           <div class="flex items-center justify-end">
             <span class="text-xl font-bold {isPraiseResult() ? 'text-[#B8860B]' : 'text-[#007722]'}">{diagnosisRate}%</span>
             {#if isPraiseResult()}
-              <svg viewBox="0 0 24 24" class="w-4 h-4 ml-1 {isPraiseResult() ? 'text-[#B8860B]' : 'text-[#007722]'}">
-                <path d="M12 5l-7 7h5v7h4v-7h5l-7-7z" fill="currentColor" />
+              <svg viewBox="0 0 24 24" class="w-5 h-8 ml-1 shrink-0 {isPraiseResult() ? 'text-[#B8860B]' : 'text-[#007722]'}">
+                <path d="M12 21V6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" />
+                <path d="M7 11L12 6L17 11" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" />
               </svg>
             {/if}
           </div>
@@ -373,11 +393,11 @@
 
       <!-- Content Text -->
       <div class="relative px-2 -mx-3 md:mx-0">
-        <div class="absolute -left-1 -top-4 text-4xl {isPraiseResult() ? 'text-[#d4af37]' : 'text-[#007722]'} opacity-20 font-serif rotate-15">"</div>
-        <p class="leading-relaxed text-slate-600 italic text-center font-serif text-sm md:text-base">
+        <div class="absolute -left-1 -top-4 text-4xl {isPraiseResult() ? 'text-[#d4af37]' : 'text-[#007722]'} opacity-20 certificate-serif rotate-15">"</div>
+        <p class="leading-relaxed text-slate-600 italic text-center certificate-serif text-sm md:text-base">
           {isPraiseResult() ? result.praise : result.roast}
         </p>
-        <div class="absolute -right-1 -bottom-4 text-4xl {isPraiseResult() ? 'text-[#d4af37]' : 'text-[#007722]'} opacity-20 font-serif rotate-15">"</div>
+        <div class="absolute -right-1 -bottom-4 text-4xl {isPraiseResult() ? 'text-[#d4af37]' : 'text-[#007722]'} opacity-20 certificate-serif rotate-15">"</div>
       </div>
 
       <!-- Analysis Log (Collapsible) -->
@@ -411,7 +431,7 @@
                     <div class="flex items-baseline justify-between gap-2 mb-2">
                       <div class="font-bold {isPraiseResult() ? 'text-[#c62828]/80' : 'text-[#007722]/80'} shrink-0">《{item[0]}》</div>
                       {#if item[2]}
-                        <div class="text-[10px] {isPraiseResult() ? 'text-[#d4af37]/80' : 'text-[#007722]/80'} line-clamp-2 leading-tight text-right italic font-serif opacity-80">
+                        <div class="text-[10px] {isPraiseResult() ? 'text-[#d4af37]/80' : 'text-[#007722]/80'} line-clamp-2 leading-tight text-right italic certificate-serif opacity-80">
                           {item[2]}
                         </div>
                       {/if}
@@ -438,7 +458,16 @@
         <div class="w-16 h-16 bg-[#c62828]/10 rounded-full flex items-center justify-center border border-[#c62828]/30 mb-4">
           <svg viewBox="0 0 100 100" class="w-full h-full">
             <circle cx="50" cy="50" r="45" fill="none" stroke="#c62828" stroke-width="2" />
-            <text x="50" y="50" text-anchor="middle" dominant-baseline="middle" fill="#c62828" class="text-xs font-bold">
+            <text
+              x="50"
+              y="50"
+              text-anchor="middle"
+              dominant-baseline="middle"
+              fill="#c62828"
+              font-size="11"
+              font-weight="700"
+              font-family="'Songti SC','STSong','SimSun','Noto Serif CJK SC','Source Han Serif SC',serif"
+            >
               豆瓣认证
             </text>
           </svg>
@@ -478,3 +507,13 @@
     </button>
   </footer>
 </div>
+
+<style>
+  .certificate-sans {
+    font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", "Source Han Sans SC", sans-serif;
+  }
+
+  .certificate-serif {
+    font-family: "Songti SC", "STSong", "SimSun", "Noto Serif CJK SC", "Source Han Serif SC", serif;
+  }
+</style>

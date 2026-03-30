@@ -67,6 +67,21 @@ You can support me by Alipay (scan QR code below) or [ko-fi](https://ko-fi.com/a
    - Enhanced provider fallback strategy: try all candidates in pool, then fallback to server-side providers if user-key providers all fail.
    - Added clearer final error when all configured providers fail.
 
+### 2026-03-30 UI Polish (Certificate Export)
+
+1. **Font Consistency in Exported Certificate**:
+   - Fixed screenshot font mismatch between on-page card and exported image by waiting for fonts/render readiness before `toPng`.
+   - Introduced explicit Chinese font stacks for certificate content (`certificate-sans`, `certificate-serif`) to reduce fallback differences during DOM-to-image rendering.
+   - Replaced SVG text utility classes with explicit SVG font attributes for the "奖" character and seal text to avoid size/weight drift after export.
+
+2. **Praise Badge Layout Improvements**:
+   - Added left padding to praise-mode header so the top-left golden badge no longer blocks "荣光记录 ID".
+   - Moved the top-left badge downward to avoid touching the top border line while keeping the badge visible.
+
+3. **Compatibility Arrow Visual Tuning**:
+   - Redesigned the arrow next to compatibility percentage into a longer up-arrow style.
+   - Increased icon height and adjusted path geometry so its visual height aligns better with the percentage text.
+
 ### 2026-03-05 Updates
 
 1. **New Features**:
@@ -130,4 +145,3 @@ You can support me by Alipay (scan QR code below) or [ko-fi](https://ko-fi.com/a
 4. **User Experience**:
    - The praise mode now uses more lavish compliments and poetic exaggeration
    - Better responsive design for all screen sizes
-
