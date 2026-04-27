@@ -30,6 +30,9 @@
     }
   });
 
+  // Visitor Counter
+  let visitCount = $state(0);
+
   // Custom API Keys
   let showApiKeys = $state(false);
   let apiKeys = $state({
@@ -40,6 +43,26 @@
   });
 
   onMount(() => {
+    // Load visitor counter
+    const today = new Date().toDateString();
+    const counterKey = 'douban_visit_counter';
+    const lastVisitKey = 'douban_last_visit';
+    
+    const savedCount = localStorage.getItem(counterKey);
+    const lastVisit = localStorage.getItem(lastVisitKey);
+    
+    if (savedCount) {
+      visitCount = parseInt(savedCount, 10);
+    }
+    
+    // Increment counter for new visits (different day or first visit)
+    if (!lastVisit || lastVisit !== today) {
+      visitCount += 1;
+      localStorage.setItem(counterKey, visitCount.toString());
+      localStorage.setItem(lastVisitKey, today);
+    }
+
+    // Load API keys
     const saved = localStorage.getItem('douban_roast_api_keys');
     if (saved) {
       try {
@@ -655,6 +678,14 @@ ${rows}
         <RoastCard result={roaster.result} />
       </div>
     {/if}
+  </div>
+
+  <!-- Visitor Counter -->
+  <div class="absolute top-4 right-4 text-center select-none">
+    <div class="bg-white/80 backdrop-blur-sm rounded-lg px-3 py-2 shadow-sm border border-[#007722]/10">
+      <div class="text-[10px] font-mono text-[#007722]/50">访问量</div>
+      <div class="text-sm font-bold text-[#007722]" id="visit-counter">0</div>
+    </div>
   </div>
 
   <div class="absolute bottom-4 left-0 w-full text-center select-none">

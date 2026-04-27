@@ -19,6 +19,7 @@ made with 99% AI, 1% Human
   - "Praise Mode" (夸夸模式): Warm, insightful appreciation
 - **AI-powered Analysis**: Uses various LLM providers for deep analysis
 - **Local API Key Storage**: Your API keys are only stored in your browser
+- **Visitor Counter**: Track daily visits with a counter displayed in the top-right corner
 
 ## How to Use
 
@@ -42,6 +43,18 @@ You can support me by Alipay (scan QR code below) or [ko-fi](https://ko-fi.com/a
 ![](./support.webp)
 
 ## Changelog
+
+### 2026-04-27 Updates
+
+1. **New Feature**:
+   - **Visitor Counter**: Added a visitor counter in the top-right corner of the page
+   - Counter increments once per day per visitor using localStorage
+   - Displays total visit count with a clean, minimalist design
+
+2. **Technical Implementation**:
+   - Uses localStorage to persist visit count (`douban_visit_counter`)
+   - Tracks last visit date (`douban_last_visit`) to prevent multiple counts per day
+   - Implemented with Svelte 5 reactive state (`$state`)
 
 ### 2026-03-30 Updates
 
